@@ -1,0 +1,33 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Round {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  status    String   // "committed" | "started" | "revealed"
+
+  nonce           String
+  commitHex       String
+  serverSeed      String?
+  clientSeed      String?
+  combinedSeed    String?
+  pegMapHash      String?
+
+  rows            Int     @default(12)
+  dropColumn      Int?
+  binIndex        Int?
+  payoutMultiplier Float?
+  betCents        Int?
+  pathJson        String? // JSON array of L/R decisions
+
+  revealedAt DateTime?
+}
