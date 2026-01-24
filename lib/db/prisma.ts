@@ -2,12 +2,30 @@ import { PrismaClient } from '@/app/generated/prisma/client';
 import { PrismaLibSql } from '@prisma/adapter-libsql';
 import path from 'path';
 
-// Use absolute path to ensure CLI and Next.js runtime use the same database
-const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
+// Determine database URL based on environment
+// Production: Use Turso (TURSO_DATABASE_URL + TURSO_AUTH_TOKEN)
+// Development: Use local SQLite file
+const isProduction = process.env.NODE_ENV === 'production';
+
+const getDatabaseUrl = () => {
+    if (isProduction && process.env.TURSO_DATABASE_URL) {
+        return process.env.TURSO_DATABASE_URL;
+    }
+    // Local development: use absolute path to SQLite file
+    return `file:${path.join(process.cwd(), 'prisma', 'dev.db')}`;
+};
+
+const getAuthToken = () => {
+    if (isProduction && process.env.TURSO_AUTH_TOKEN) {
+        return process.env.TURSO_AUTH_TOKEN;
+    }
+    return undefined;
+};
 
 // Create Prisma adapter with config
 const adapter = new PrismaLibSql({
-    url: `file:${dbPath}`,
+    url: getDatabaseUrl(),
+    authToken: getAuthToken(),
 });
 
 // Prevent multiple instances of Prisma Client in development
@@ -17,7 +35,7 @@ const globalForPrisma = globalThis as unknown as {
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
 
-if (process.env.NODE_ENV !== 'production') {
+if (!isProduction) {
     globalForPrisma.prisma = prisma;
 }
 
